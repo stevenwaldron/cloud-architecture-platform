@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.build/
+
+# Terraform state contains the DB master password in plaintext.
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+terraform.tfvars
+*.auto.tfvars
+
+.env
+.env.*
+*.tar.gz
+.DS_Store

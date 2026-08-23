@@ -1,0 +1,10 @@
+{
+  "name": "cloud-architecture-platform-shared-layer",
+  "version": "1.0.0",
+  "dependencies": {
+    "@aws-sdk/client-rds-data": "^3.600.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.600.0",
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/s3-request-presigner": "^3.600.0"
+  }
+}
