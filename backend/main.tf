@@ -16,17 +16,17 @@ terraform {
     }
   }
 
-  # Same note as the Route 53 module: local state for now. Point this at the
-  # same S3 backend + DynamoDB lock table once you've set one up, so both
-  # Terraform configs share one remote state location.
-  #
-  # backend "s3" {
-  #   bucket         = "cloud-architecture-platform-terraform-state"
-  #   key            = "backend/terraform.tfstate"
-  #   region         = "us-east-1"
-  #   dynamodb_table = "cloud-architecture-platform-terraform-locks"
-  #   encrypt        = true
-  # }
+  # Remote state. Local state can't be shared with CI runners and is a single
+  # point of failure — losing the laptop means losing the only record of what
+  # is deployed. use_lockfile takes locking from S3 itself (Terraform 1.10+),
+  # so no DynamoDB table is needed.
+  backend "s3" {
+    bucket       = "cloud-arch-platform-tfstate-099814429392"
+    key          = "backend/terraform.tfstate"
+    region       = "us-east-1"
+    encrypt      = true
+    use_lockfile = true
+  }
 }
 
 provider "aws" {
