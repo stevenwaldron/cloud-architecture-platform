@@ -1,0 +1,216 @@
+name: Deploy
+
+# Runs on every push to main. Pull requests get the validate and plan stages
+# only — no apply — so a proposed change can be reviewed against a real plan
+# without touching infrastructure.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:        # lets a deploy be triggered by hand from the UI
+
+env:
+  AWS_REGION: us-east-1
+  TF_WORKING_DIR: backend
+  FRONTEND_DIR: frontend
+  FRONTEND_BUCKET: cloudarch-frontend-099814429392
+  CLOUDFRONT_DISTRIBUTION_ID: E2KYFSUSO8GAR4
+  EXPECTED_FRONTEND_URL: https://d14uhs480fdu02.cloudfront.net
+
+# id-token is what lets the job request an OIDC token from GitHub. Without it
+# the AWS credential step fails with a confusing "Credentials could not be
+# loaded" — nothing to do with the IAM role itself.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Validate: fast, cheap checks that need no AWS access at all. Runs first so
+  # an obvious mistake fails in seconds rather than after a slow plan.
+  # ---------------------------------------------------------------------------
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.1
+
+      - name: Terraform formatting
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform fmt -check -recursive
+
+      # This guard exists because of a real incident: the allowed-origin
+      # variable silently reverted to a placeholder during a repackaging step,
+      # and Terraform faithfully applied the wrong value, breaking every
+      # cross-origin request in production. Infrastructure as code guarantees
+      # the deployed state matches the source — not that the source is correct.
+      # Automating the check is the entire argument for this pipeline.
+      - name: Guard against frontend_url drift
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          ACTUAL=$(grep -A3 'variable "frontend_url"' variables.tf \
+                   | grep 'default' | sed 's/.*= *"//; s/".*//')
+          echo "frontend_url default: $ACTUAL"
+          if [ "$ACTUAL" != "${{ env.EXPECTED_FRONTEND_URL }}" ]; then
+            echo "::error::frontend_url is '$ACTUAL', expected '${{ env.EXPECTED_FRONTEND_URL }}'. This would break CORS in production."
+            exit 1
+          fi
+
+      - name: Lambda syntax check
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          for f in $(find lambda-src lambda-layer -name '*.js' -not -path '*/node_modules/*'); do
+            node --check "$f" || { echo "::error::Syntax error in $f"; exit 1; }
+          done
+          echo "All Lambda sources parse."
+
+      - name: Frontend build
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          npm ci
+          npm run build
+
+  # ---------------------------------------------------------------------------
+  # Plan: needs AWS to read remote state, but changes nothing. The plan is saved
+  # as an artifact so apply runs exactly what was reviewed — regenerating it
+  # would mean approving one plan and applying a different one.
+  # ---------------------------------------------------------------------------
+  plan:
+    name: Plan
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::099814429392:role/github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.1
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      - name: Terraform validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+      - name: Terraform plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -out=tfplan -input=false
+
+      # Surfaces destructive changes in the job summary, so the approver sees
+      # them without reading hundreds of lines of plan output.
+      - name: Summarise plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform show -no-color tfplan > plan.txt
+          echo "### Terraform plan" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E "^Plan:|will be destroyed|must be replaced|will be created" plan.txt \
+            >> $GITHUB_STEP_SUMMARY || echo "No changes." >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: |
+            ${{ env.TF_WORKING_DIR }}/tfplan
+            ${{ env.TF_WORKING_DIR }}/plan.txt
+          retention-days: 5
+
+  # ---------------------------------------------------------------------------
+  # Deploy: gated behind a GitHub Environment with a required reviewer, so this
+  # job waits for a human. Skipped entirely on pull requests.
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy
+    needs: plan
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production        # configure the required reviewer here
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::099814429392:role/github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.1
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      # Applies the SAVED plan, not a fresh one. This is what makes the approval
+      # meaningful: what was reviewed is exactly what runs.
+      - name: Terraform apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -input=false tfplan
+
+      # Frontend config comes from Terraform outputs rather than being committed,
+      # so the bundle can never point at a stale endpoint after infrastructure
+      # is recreated.
+      - name: Read backend outputs
+        id: tf
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "api_url=$(terraform output -raw api_endpoint)" >> $GITHUB_OUTPUT
+          echo "pool_id=$(terraform output -raw cognito_user_pool_id)" >> $GITHUB_OUTPUT
+          echo "client_id=$(terraform output -raw cognito_client_id)" >> $GITHUB_OUTPUT
+          echo "cognito_domain=$(terraform output -raw cognito_domain)" >> $GITHUB_OUTPUT
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12'
+          cache: npm
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+
+      - name: Build frontend
+        working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          VITE_API_BASE_URL: ${{ steps.tf.outputs.api_url }}
+          VITE_COGNITO_USER_POOL_ID: ${{ steps.tf.outputs.pool_id }}
+          VITE_COGNITO_CLIENT_ID: ${{ steps.tf.outputs.client_id }}
+          VITE_COGNITO_DOMAIN: ${{ steps.tf.outputs.cognito_domain }}
+        run: |
+          npm ci
+          npm run build
+
+      # --delete removes files no longer in the build. Without it, old hashed
+      # asset bundles accumulate in the bucket indefinitely.
+      - name: Sync to S3
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: aws s3 sync dist/ "s3://${{ env.FRONTEND_BUCKET }}" --delete
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths "/*"
+
+      # A deploy that "succeeded" while serving a broken site is worse than one
+      # that failed, so confirm the site actually responds before finishing.
+      - name: Smoke test
+        run: |
+          sleep 10
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.EXPECTED_FRONTEND_URL }}")
+          echo "Site returned HTTP $CODE"
+          [ "$CODE" = "200" ] || { echo "::error::Site returned $CODE after deploy"; exit 1; }
