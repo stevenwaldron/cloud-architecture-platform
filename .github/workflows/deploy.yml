@@ -84,6 +84,9 @@ jobs:
     name: Plan
     needs: validate
     runs-on: ubuntu-latest
+    permissions:              
+      id-token: write         
+      contents: read 
     steps:
       - uses: actions/checkout@v4
 
@@ -140,7 +143,10 @@ jobs:
     needs: plan
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    environment: production        # configure the required reviewer here
+    environment: production
+    permissions:       
+      id-token: write        
+      contents: read         
     steps:
       - uses: actions/checkout@v4
 
