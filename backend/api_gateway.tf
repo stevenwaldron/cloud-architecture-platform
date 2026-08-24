@@ -70,26 +70,26 @@ resource "aws_lambda_permission" "apigw" {
 
 locals {
   routes = {
-    "POST /auth/signup"                    = { fn = "auth-signup", auth = false }
-    "POST /auth/resend-code"               = { fn = "auth-resend-code", auth = false }
-    "POST /auth/confirm"                   = { fn = "auth-confirm", auth = false }
-    "POST /auth/signin"                    = { fn = "auth-signin", auth = false }
-    "POST /auth/refresh"                   = { fn = "auth-refresh", auth = false }
-    "POST /auth/forgot-password"           = { fn = "auth-forgot-password", auth = false }
-    "POST /auth/reset-password"            = { fn = "auth-reset-password", auth = false }
-    "POST /auth/signout"                   = { fn = "auth-signout", auth = false } # token itself is the auth; see auth-signout/index.mjs
+    "POST /auth/signup"          = { fn = "auth-signup", auth = false }
+    "POST /auth/resend-code"     = { fn = "auth-resend-code", auth = false }
+    "POST /auth/confirm"         = { fn = "auth-confirm", auth = false }
+    "POST /auth/signin"          = { fn = "auth-signin", auth = false }
+    "POST /auth/refresh"         = { fn = "auth-refresh", auth = false }
+    "POST /auth/forgot-password" = { fn = "auth-forgot-password", auth = false }
+    "POST /auth/reset-password"  = { fn = "auth-reset-password", auth = false }
+    "POST /auth/signout"         = { fn = "auth-signout", auth = false } # token itself is the auth; see auth-signout/index.mjs
 
-    "GET /users/lookup"                    = { fn = "users-profile", auth = false }
-    "GET /users/handle-available"           = { fn = "users-profile", auth = false }
-    "GET /users/me"                        = { fn = "users-profile", auth = true }  # own record + settings; must stay above the {userId} route conceptually — API Gateway prefers the literal path
-    "GET /users/{userId}"                  = { fn = "users-profile", auth = false }
-    "PUT /users/me"                        = { fn = "users-profile", auth = true }
-    "POST /users/me/avatar"                = { fn = "users-avatar-upload", auth = true }
-    "POST /users/{userId}/follow"          = { fn = "users-follow", auth = true }
-    "DELETE /users/{userId}/follow"        = { fn = "users-follow", auth = true }
-    "GET /users/{userId}/followers"        = { fn = "users-followers", auth = false }
-    "GET /users/{userId}/diagrams"         = { fn = "diagrams-list", auth = false }
-    "GET /users/{userId}/services"         = { fn = "user-services", auth = false }
+    "GET /users/lookup"             = { fn = "users-profile", auth = false }
+    "GET /users/handle-available"   = { fn = "users-profile", auth = false }
+    "GET /users/me"                 = { fn = "users-profile", auth = true } # own record + settings; must stay above the {userId} route conceptually — API Gateway prefers the literal path
+    "GET /users/{userId}"           = { fn = "users-profile", auth = false }
+    "PUT /users/me"                 = { fn = "users-profile", auth = true }
+    "POST /users/me/avatar"         = { fn = "users-avatar-upload", auth = true }
+    "POST /users/{userId}/follow"   = { fn = "users-follow", auth = true }
+    "DELETE /users/{userId}/follow" = { fn = "users-follow", auth = true }
+    "GET /users/{userId}/followers" = { fn = "users-followers", auth = false }
+    "GET /users/{userId}/diagrams"  = { fn = "diagrams-list", auth = false }
+    "GET /users/{userId}/services"  = { fn = "user-services", auth = false }
 
     "POST /diagrams"                       = { fn = "diagrams-crud", auth = true }
     "GET /diagrams/{diagramId}"            = { fn = "diagrams-crud", auth = false }
@@ -100,33 +100,33 @@ locals {
     "GET /diagrams/{diagramId}/export"     = { fn = "diagrams-export", auth = true }
     "POST /diagrams/{diagramId}/thumbnail" = { fn = "diagrams-thumbnail-upload", auth = true }
 
-    "GET /feed"                            = { fn = "feed", auth = true }
-    "GET /discover"                        = { fn = "discover", auth = false }
-    "GET /search"                          = { fn = "search", auth = false }
+    "GET /feed"     = { fn = "feed", auth = true }
+    "GET /discover" = { fn = "discover", auth = false }
+    "GET /search"   = { fn = "search", auth = false }
 
-    "GET /diagrams/{diagramId}/likes"      = { fn = "likes", auth = false }
-    "POST /diagrams/{diagramId}/likes"     = { fn = "likes", auth = true }
-    "DELETE /diagrams/{diagramId}/likes"   = { fn = "likes", auth = true }
+    "GET /diagrams/{diagramId}/likes"    = { fn = "likes", auth = false }
+    "POST /diagrams/{diagramId}/likes"   = { fn = "likes", auth = true }
+    "DELETE /diagrams/{diagramId}/likes" = { fn = "likes", auth = true }
 
-    "GET /saves"                           = { fn = "saves", auth = true }
-    "POST /diagrams/{diagramId}/saves"     = { fn = "saves", auth = true }
-    "DELETE /diagrams/{diagramId}/saves"   = { fn = "saves", auth = true }
+    "GET /saves"                         = { fn = "saves", auth = true }
+    "POST /diagrams/{diagramId}/saves"   = { fn = "saves", auth = true }
+    "DELETE /diagrams/{diagramId}/saves" = { fn = "saves", auth = true }
 
-    "GET /diagrams/{diagramId}/comments"   = { fn = "comments", auth = false }
-    "POST /diagrams/{diagramId}/comments"  = { fn = "comments", auth = true }
-    "PUT /comments/{commentId}"            = { fn = "comments-item", auth = true }
-    "DELETE /comments/{commentId}"         = { fn = "comments-item", auth = true }
-    "POST /comments/{commentId}/likes"     = { fn = "comment-likes", auth = true }
-    "DELETE /comments/{commentId}/likes"   = { fn = "comment-likes", auth = true }
+    "GET /diagrams/{diagramId}/comments"  = { fn = "comments", auth = false }
+    "POST /diagrams/{diagramId}/comments" = { fn = "comments", auth = true }
+    "PUT /comments/{commentId}"           = { fn = "comments-item", auth = true }
+    "DELETE /comments/{commentId}"        = { fn = "comments-item", auth = true }
+    "POST /comments/{commentId}/likes"    = { fn = "comment-likes", auth = true }
+    "DELETE /comments/{commentId}/likes"  = { fn = "comment-likes", auth = true }
 
-    "GET /follow-requests"                      = { fn = "follow-requests", auth = true }
-    "PUT /follow-requests/{requesterId}"        = { fn = "follow-requests", auth = true }
-    "DELETE /follow-requests/{requesterId}"     = { fn = "follow-requests", auth = true }
+    "GET /follow-requests"                  = { fn = "follow-requests", auth = true }
+    "PUT /follow-requests/{requesterId}"    = { fn = "follow-requests", auth = true }
+    "DELETE /follow-requests/{requesterId}" = { fn = "follow-requests", auth = true }
 
-    "GET /notifications"                        = { fn = "notifications", auth = true }
-    "PUT /notifications/read-all"               = { fn = "notifications", auth = true }
-    "PUT /notifications/{notificationId}"       = { fn = "notifications", auth = true }
-    "DELETE /notifications/{notificationId}"    = { fn = "notifications", auth = true }
+    "GET /notifications"                     = { fn = "notifications", auth = true }
+    "PUT /notifications/read-all"            = { fn = "notifications", auth = true }
+    "PUT /notifications/{notificationId}"    = { fn = "notifications", auth = true }
+    "DELETE /notifications/{notificationId}" = { fn = "notifications", auth = true }
   }
 }
 
@@ -137,5 +137,5 @@ resource "aws_apigatewayv2_route" "route" {
   target    = "integrations/${aws_apigatewayv2_integration.function[each.value.fn].id}"
 
   authorization_type = each.value.auth ? "JWT" : "NONE"
-  authorizer_id       = each.value.auth ? aws_apigatewayv2_authorizer.cognito.id : null
+  authorizer_id      = each.value.auth ? aws_apigatewayv2_authorizer.cognito.id : null
 }

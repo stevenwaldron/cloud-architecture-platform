@@ -29,34 +29,34 @@ locals {
   # HTTP APIs, not configurable) so a slow-but-successful retry completes
   # cleanly rather than the gateway cutting the connection first.
   functions = {
-    auth-signup                = { timeout = 28, memory = 256 }
-    auth-resend-code            = { timeout = 28, memory = 256 }
-    auth-confirm                = { timeout = 28, memory = 256 }
-    auth-signin                 = { timeout = 28, memory = 256 }
-    auth-refresh                 = { timeout = 28, memory = 256 }
-    auth-forgot-password         = { timeout = 28, memory = 256 }
-    auth-reset-password          = { timeout = 28, memory = 256 }
-    auth-signout                 = { timeout = 28, memory = 256 }
-    users-profile                = { timeout = 28, memory = 256 }
-    users-avatar-upload          = { timeout = 28, memory = 256 }
-    users-follow                 = { timeout = 28, memory = 256 }
-    users-followers              = { timeout = 28, memory = 256 }
-    diagrams-crud                = { timeout = 28, memory = 512 } # canvas_data payloads can be sizeable
-    diagrams-list                = { timeout = 28, memory = 256 }
-    diagrams-publish             = { timeout = 28, memory = 256 }
-    diagrams-export              = { timeout = 28, memory = 256 }
-    diagrams-thumbnail-upload    = { timeout = 28, memory = 256 }
-    feed                         = { timeout = 28, memory = 256 }
-    discover                     = { timeout = 28, memory = 256 }
-    search                       = { timeout = 28, memory = 256 }
-    likes                        = { timeout = 28, memory = 256 }
-    saves                        = { timeout = 28, memory = 256 }
-    comments                     = { timeout = 28, memory = 256 }
-    comments-item                = { timeout = 28, memory = 256 }
-    comment-likes                = { timeout = 28, memory = 256 }
-    notifications                = { timeout = 28, memory = 256 }
-    follow-requests              = { timeout = 28, memory = 256 }
-    user-services                = { timeout = 28, memory = 512 }
+    auth-signup               = { timeout = 28, memory = 256 }
+    auth-resend-code          = { timeout = 28, memory = 256 }
+    auth-confirm              = { timeout = 28, memory = 256 }
+    auth-signin               = { timeout = 28, memory = 256 }
+    auth-refresh              = { timeout = 28, memory = 256 }
+    auth-forgot-password      = { timeout = 28, memory = 256 }
+    auth-reset-password       = { timeout = 28, memory = 256 }
+    auth-signout              = { timeout = 28, memory = 256 }
+    users-profile             = { timeout = 28, memory = 256 }
+    users-avatar-upload       = { timeout = 28, memory = 256 }
+    users-follow              = { timeout = 28, memory = 256 }
+    users-followers           = { timeout = 28, memory = 256 }
+    diagrams-crud             = { timeout = 28, memory = 512 } # canvas_data payloads can be sizeable
+    diagrams-list             = { timeout = 28, memory = 256 }
+    diagrams-publish          = { timeout = 28, memory = 256 }
+    diagrams-export           = { timeout = 28, memory = 256 }
+    diagrams-thumbnail-upload = { timeout = 28, memory = 256 }
+    feed                      = { timeout = 28, memory = 256 }
+    discover                  = { timeout = 28, memory = 256 }
+    search                    = { timeout = 28, memory = 256 }
+    likes                     = { timeout = 28, memory = 256 }
+    saves                     = { timeout = 28, memory = 256 }
+    comments                  = { timeout = 28, memory = 256 }
+    comments-item             = { timeout = 28, memory = 256 }
+    comment-likes             = { timeout = 28, memory = 256 }
+    notifications             = { timeout = 28, memory = 256 }
+    follow-requests           = { timeout = 28, memory = 256 }
+    user-services             = { timeout = 28, memory = 512 }
   }
 }
 
@@ -89,13 +89,13 @@ resource "aws_lambda_function" "function" {
 
   environment {
     variables = {
-      DB_CLUSTER_ARN      = aws_rds_cluster.main.arn
-      DB_SECRET_ARN       = aws_secretsmanager_secret.db_master.arn
-      DB_NAME             = var.db_name
-      USER_CONTENT_BUCKET = aws_s3_bucket.user_content.bucket
-      COGNITO_CLIENT_ID   = aws_cognito_user_pool_client.web.id
+      DB_CLUSTER_ARN       = aws_rds_cluster.main.arn
+      DB_SECRET_ARN        = aws_secretsmanager_secret.db_master.arn
+      DB_NAME              = var.db_name
+      USER_CONTENT_BUCKET  = aws_s3_bucket.user_content.bucket
+      COGNITO_CLIENT_ID    = aws_cognito_user_pool_client.web.id
       COGNITO_USER_POOL_ID = aws_cognito_user_pool.main.id
-      FRONTEND_URL        = var.frontend_url
+      FRONTEND_URL         = var.frontend_url
     }
   }
 

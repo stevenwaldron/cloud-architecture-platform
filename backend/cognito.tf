@@ -3,7 +3,7 @@
 resource "aws_cognito_user_pool" "main" {
   name = "${var.name_prefix}-users"
 
-  username_attributes     = ["email"]
+  username_attributes      = ["email"]
   auto_verified_attributes = ["email"]
 
   password_policy {
@@ -60,7 +60,7 @@ resource "aws_cognito_identity_provider" "google" {
 
   provider_details = {
     client_id        = var.google_client_id
-    client_secret     = var.google_client_secret
+    client_secret    = var.google_client_secret
     authorize_scopes = "email openid profile"
   }
 
@@ -89,7 +89,7 @@ resource "aws_cognito_identity_provider" "facebook" {
 
   provider_details = {
     client_id        = var.facebook_client_id
-    client_secret     = var.facebook_client_secret
+    client_secret    = var.facebook_client_secret
     authorize_scopes = "email public_profile"
   }
 
@@ -161,11 +161,11 @@ resource "aws_cognito_identity_provider" "slack" {
   provider_type = "OIDC"
 
   provider_details = {
-    client_id                = var.slack_client_id
-    client_secret            = var.slack_client_secret
+    client_id                 = var.slack_client_id
+    client_secret             = var.slack_client_secret
     attributes_request_method = "GET"
-    oidc_issuer              = "https://slack.com"
-    authorize_scopes         = "openid email profile"
+    oidc_issuer               = "https://slack.com"
+    authorize_scopes          = "openid email profile"
   }
 
   attribute_mapping = {
@@ -205,13 +205,13 @@ resource "aws_cognito_user_pool_client" "web" {
   callback_urls = [var.frontend_url, "http://localhost:3000"]
   logout_urls   = [var.frontend_url, "http://localhost:3000"]
 
-  allowed_oauth_flows                 = ["code"]
-  allowed_oauth_scopes                = ["email", "openid", "profile"]
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["email", "openid", "profile"]
   allowed_oauth_flows_user_pool_client = true
 
-  access_token_validity  = 1   # hour
-  id_token_validity      = 1   # hour
-  refresh_token_validity = 30  # days
+  access_token_validity  = 1  # hour
+  id_token_validity      = 1  # hour
+  refresh_token_validity = 30 # days
 
   token_validity_units {
     access_token  = "hours"

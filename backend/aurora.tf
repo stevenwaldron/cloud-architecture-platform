@@ -9,13 +9,13 @@ data "aws_rds_engine_version" "aurora_mysql" {
 }
 
 resource "aws_rds_cluster" "main" {
-  cluster_identifier     = "${var.name_prefix}-aurora"
-  engine                 = "aurora-mysql"
-  engine_mode            = "provisioned" # Serverless v2 uses "provisioned" mode with serverlessv2_scaling_configuration
-  engine_version         = data.aws_rds_engine_version.aurora_mysql.version
-  database_name          = var.db_name
-  master_username        = var.db_master_username
-  master_password        = random_password.db_master.result
+  cluster_identifier = "${var.name_prefix}-aurora"
+  engine             = "aurora-mysql"
+  engine_mode        = "provisioned" # Serverless v2 uses "provisioned" mode with serverlessv2_scaling_configuration
+  engine_version     = data.aws_rds_engine_version.aurora_mysql.version
+  database_name      = var.db_name
+  master_username    = var.db_master_username
+  master_password    = random_password.db_master.result
 
   db_subnet_group_name   = aws_db_subnet_group.aurora.name
   vpc_security_group_ids = [aws_security_group.aurora.id]
