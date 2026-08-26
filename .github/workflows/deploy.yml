@@ -90,15 +90,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check OIDC availability
-        run: |
-          echo "sub = repo:${{ github.repository }}:ref:${{ github.ref }}"
-          if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then
-            echo "OIDC IS AVAILABLE — token endpoint present"
-          else
-            echo "OIDC NOT AVAILABLE — id-token permission not in effect"
-          fi
-
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::099814429392:role/github-actions-deploy
