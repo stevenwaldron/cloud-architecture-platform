@@ -135,9 +135,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: tfplan
+          include-hidden-files: true      # .build is dot-prefixed and skipped by default
           path: |
             ${{ env.TF_WORKING_DIR }}/tfplan
             ${{ env.TF_WORKING_DIR }}/plan.txt
+            ${{ env.TF_WORKING_DIR }}/.build/
           retention-days: 5
 
   # ---------------------------------------------------------------------------
