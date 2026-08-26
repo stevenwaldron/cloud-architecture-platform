@@ -15,3 +15,13 @@ terraform.tfvars
 .env.*
 *.tar.gz
 .DS_Store
+
+# The Lambda layer's shared modules are FIRST-PARTY SOURCE. They must live under
+# nodejs/node_modules/ so Lambda resolves require("shared/db"), but the blanket
+# node_modules/ rule above silently excluded them from version control.
+# Only the first-party 'shared' module is un-ignored. A broader exception
+# would commit the entire AWS SDK — thousands of files that npm install
+# regenerates from package.json.
+!backend/lambda-layer/nodejs/node_modules/
+!backend/lambda-layer/nodejs/node_modules/shared/
+!backend/lambda-layer/nodejs/node_modules/shared/**
