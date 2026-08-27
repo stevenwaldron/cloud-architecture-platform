@@ -150,6 +150,8 @@ jobs:
     environment: production        # configure the required reviewer here
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # rollback needs history to check out an older commit
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -210,7 +212,7 @@ jobs:
       # asset bundles accumulate in the bucket indefinitely.
       - name: Sync to S3
         working-directory: ${{ env.FRONTEND_DIR }}
-        run: aws s3 sync dist/ "s3://${{ env.FRONTEND_BUCKET }}" --delete
+        run: aws s3 sync dist/ "s3://${{ env.FRONTEND_BUCKET }}" --delete --exclude "last-good-sha.txt"
 
       - name: Invalidate CloudFront
         run: |
@@ -237,3 +239,43 @@ jobs:
             echo "::error::Deployed build is $LIVE, expected ${{ github.sha }}"
             exit 1
           fi
+
+
+      - name: Record last known good build
+        run: |
+          echo "${{ github.sha }}" > /tmp/last-good-sha.txt
+          aws s3 cp /tmp/last-good-sha.txt "s3://${{ env.FRONTEND_BUCKET }}/last-good-sha.txt" \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+      - name: Roll back frontend to last known good build
+        if: failure()
+        env:
+          VITE_API_BASE_URL: ${{ steps.tf.outputs.api_url }}
+          VITE_COGNITO_USER_POOL_ID: ${{ steps.tf.outputs.pool_id }}
+          VITE_COGNITO_CLIENT_ID: ${{ steps.tf.outputs.client_id }}
+          VITE_COGNITO_DOMAIN: ${{ steps.tf.outputs.cognito_domain }}
+        run: |
+          LAST_GOOD=$(aws s3 cp "s3://${{ env.FRONTEND_BUCKET }}/last-good-sha.txt" - 2>/dev/null | tr -d '[:space:]' || true)
+          if [ -z "$LAST_GOOD" ]; then
+            echo "::warning::No last known good build recorded — cannot roll back."
+            exit 0
+          fi
+          if [ "$LAST_GOOD" = "${{ github.sha }}" ]; then
+            echo "::warning::Last known good build is this commit; nothing to roll back to."
+            exit 0
+          fi
+          echo "Rolling back to $LAST_GOOD"
+          git checkout "$LAST_GOOD" -- frontend
+          cd frontend
+          npm ci
+          VITE_BUILD_SHA="$LAST_GOOD" npm run build
+          echo "$LAST_GOOD" > dist/build-sha.txt
+          aws s3 sync dist/ "s3://${{ env.FRONTEND_BUCKET }}" --delete --exclude "last-good-sha.txt"
+          cd ..
+          aws cloudfront create-invalidation --distribution-id "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" --paths "/*"
+          sleep 15
+          LIVE=$(curl -s "${{ env.EXPECTED_FRONTEND_URL }}/build-sha.txt?cb=$(date +%s)" | tr -d '[:space:]')
+          echo "rolled back to: $LAST_GOOD"
+          echo "now live:       $LIVE"
+          [ "$LIVE" = "$LAST_GOOD" ] || { echo "::error::Rollback did not take effect"; exit 1; }
+          echo "::notice::Frontend rolled back to $LAST_GOOD. Backend NOT rolled back — fix forward."
