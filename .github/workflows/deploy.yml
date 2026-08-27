@@ -84,9 +84,6 @@ jobs:
     name: Plan
     needs: validate
     runs-on: ubuntu-latest
-    permissions:              
-      id-token: write         
-      contents: read 
     steps:
       - uses: actions/checkout@v4
 
@@ -126,11 +123,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: tfplan
-          include-hidden-files: true      # .build is dot-prefixed and skipped by default
           path: |
             ${{ env.TF_WORKING_DIR }}/tfplan
             ${{ env.TF_WORKING_DIR }}/plan.txt
-            ${{ env.TF_WORKING_DIR }}/.build/
           retention-days: 5
 
   # ---------------------------------------------------------------------------
@@ -142,10 +137,7 @@ jobs:
     needs: plan
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    environment: production
-    permissions:       
-      id-token: write        
-      contents: read         
+    environment: production        # configure the required reviewer here
     steps:
       - uses: actions/checkout@v4
 
