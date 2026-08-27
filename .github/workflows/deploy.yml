@@ -69,6 +69,10 @@ jobs:
           done
           echo "All Lambda sources parse."
 
+      - name: Backend unit tests
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: node --test "tests/*.test.js"
+
       - name: Frontend build
         working-directory: ${{ env.FRONTEND_DIR }}
         run: |
@@ -196,9 +200,11 @@ jobs:
           VITE_COGNITO_USER_POOL_ID: ${{ steps.tf.outputs.pool_id }}
           VITE_COGNITO_CLIENT_ID: ${{ steps.tf.outputs.client_id }}
           VITE_COGNITO_DOMAIN: ${{ steps.tf.outputs.cognito_domain }}
+          VITE_BUILD_SHA: ${{ github.sha }}
         run: |
           npm ci
           npm run build
+          echo "${{ github.sha }}" > dist/build-sha.txt
 
       # --delete removes files no longer in the build. Without it, old hashed
       # asset bundles accumulate in the bucket indefinitely.
@@ -220,3 +226,14 @@ jobs:
           CODE=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.EXPECTED_FRONTEND_URL }}")
           echo "Site returned HTTP $CODE"
           [ "$CODE" = "200" ] || { echo "::error::Site returned $CODE after deploy"; exit 1; }
+
+      
+      - name: Smoke test — correct build is live
+        run: |
+          LIVE=$(curl -s "${{ env.EXPECTED_FRONTEND_URL }}/build-sha.txt?cb=$(date +%s)" | tr -d '[:space:]')
+          echo "expected: ${{ github.sha }}"
+          echo "live:     $LIVE"
+          if [ "$LIVE" != "${{ github.sha }}" ]; then
+            echo "::error::Deployed build is $LIVE, expected ${{ github.sha }}"
+            exit 1
+          fi
