@@ -120,12 +120,18 @@ jobs:
             >> $GITHUB_STEP_SUMMARY || echo "No changes." >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
+      # The layer zip is materialised by archive_file during PLAN, on the plan
+      # runner. The saved plan references that path, so the file has to travel
+      # with it or apply fails on a missing file — after having already
+      # destroyed the previous layer version.
       - uses: actions/upload-artifact@v4
         with:
           name: tfplan
+          include-hidden-files: true      # .build is dot-prefixed and skipped by default
           path: |
             ${{ env.TF_WORKING_DIR }}/tfplan
             ${{ env.TF_WORKING_DIR }}/plan.txt
+            ${{ env.TF_WORKING_DIR }}/.build/
           retention-days: 5
 
   # ---------------------------------------------------------------------------
