@@ -206,7 +206,7 @@ jobs:
         run: |
           npm ci
           npm run build
-          echo "${{ github.sha }}" > dist/build-sha.txt
+          echo "deliberately-wrong-sha" > dist/build-sha.txt
 
       # --delete removes files no longer in the build. Without it, old hashed
       # asset bundles accumulate in the bucket indefinitely.
