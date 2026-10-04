@@ -220,6 +220,15 @@ jobs:
             --distribution-id "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" \
             --paths "/*"
 
+      # Rollback drill: a commit whose message contains [simulate-failure] makes
+      # the pipeline fail on purpose AFTER the new build is live, so the rollback
+      # step below has something real to undo. Never fires on an ordinary commit.
+      - name: Simulate failed deploy (rollback drill)
+        if: contains(github.event.head_commit.message, '[simulate-failure]')
+        run: |
+          echo "::warning::Rollback drill requested via commit message - failing on purpose."
+          exit 1
+
       # A deploy that "succeeded" while serving a broken site is worse than one
       # that failed, so confirm the site actually responds before finishing.
       - name: Smoke test
