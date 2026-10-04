@@ -55,5 +55,5 @@ variable "cognito_social_providers" {
 variable "frontend_url" {
   description = "The URL the frontend is served from — used for Cognito callback URLs and CORS."
   type        = string
-  default     = "https://d14uhs480fdu02.cloudfront.net"
+  default     = "https://du8elo92f6be7.cloudfront.net"
 }

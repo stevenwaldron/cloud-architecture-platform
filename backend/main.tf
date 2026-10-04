@@ -21,7 +21,7 @@ terraform {
   # is deployed. use_lockfile takes locking from S3 itself (Terraform 1.10+),
   # so no DynamoDB table is needed.
   backend "s3" {
-    bucket       = "cloud-arch-platform-tfstate-099814429392"
+    bucket       = "cloudarch-tfstate-197907148226"
     key          = "backend/terraform.tfstate"
     region       = "us-east-1"
     encrypt      = true

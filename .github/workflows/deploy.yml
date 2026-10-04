@@ -14,9 +14,9 @@ env:
   AWS_REGION: us-east-1
   TF_WORKING_DIR: backend
   FRONTEND_DIR: frontend
-  FRONTEND_BUCKET: cloudarch-frontend-099814429392
-  CLOUDFRONT_DISTRIBUTION_ID: E2KYFSUSO8GAR4
-  EXPECTED_FRONTEND_URL: https://d14uhs480fdu02.cloudfront.net
+  FRONTEND_BUCKET: cloudarch-frontend-197907148226
+  CLOUDFRONT_DISTRIBUTION_ID: E238HOCSH64XDD
+  EXPECTED_FRONTEND_URL: https://du8elo92f6be7.cloudfront.net
 
 # id-token is what lets the job request an OIDC token from GitHub. Without it
 # the AWS credential step fails with a confusing "Credentials could not be
@@ -93,7 +93,7 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::099814429392:role/github-actions-deploy
+          role-to-assume: arn:aws:iam::197907148226:role/github-actions-deploy
           aws-region: ${{ env.AWS_REGION }}
 
       - uses: hashicorp/setup-terraform@v3
@@ -155,7 +155,7 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::099814429392:role/github-actions-deploy
+          role-to-assume: arn:aws:iam::197907148226:role/github-actions-deploy
           aws-region: ${{ env.AWS_REGION }}
 
       - uses: hashicorp/setup-terraform@v3
