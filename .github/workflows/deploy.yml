@@ -128,15 +128,14 @@ jobs:
       # runner. The saved plan references that path, so the file has to travel
       # with it or apply fails on a missing file — after having already
       # destroyed the previous layer version.
-      - uses: actions/upload-artifact@v4
-        with:
-          name: tfplan
-          include-hidden-files: true      # .build is dot-prefixed and skipped by default
-          path: |
-            ${{ env.TF_WORKING_DIR }}/tfplan
-            ${{ env.TF_WORKING_DIR }}/plan.txt
-            ${{ env.TF_WORKING_DIR }}/.build/
-          retention-days: 5
+      # The saved plan is stored in the private state bucket, NOT as a GitHub
+      # artifact. A plan file embeds a snapshot of state, including secrets such
+      # as the database master password, and artifacts on a public repository
+      # can be downloaded by anyone signed in to GitHub.
+      - name: Store plan in the private state bucket
+        run: |
+          aws s3 cp "${{ env.TF_WORKING_DIR }}/tfplan" "s3://cloudarch-tfstate-197907148226/plans/${{ github.run_id }}/tfplan"
+          aws s3 sync "${{ env.TF_WORKING_DIR }}/.build/" "s3://cloudarch-tfstate-197907148226/plans/${{ github.run_id }}/build/"
 
   # ---------------------------------------------------------------------------
   # Deploy: gated behind a GitHub Environment with a required reviewer, so this
@@ -162,10 +161,10 @@ jobs:
         with:
           terraform_version: 1.14.1
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: tfplan
-          path: ${{ env.TF_WORKING_DIR }}
+      - name: Fetch saved plan from the private state bucket
+        run: |
+          aws s3 cp "s3://cloudarch-tfstate-197907148226/plans/${{ github.run_id }}/tfplan" "${{ env.TF_WORKING_DIR }}/tfplan"
+          aws s3 sync "s3://cloudarch-tfstate-197907148226/plans/${{ github.run_id }}/build/" "${{ env.TF_WORKING_DIR }}/.build/"
 
       - name: Terraform init
         working-directory: ${{ env.TF_WORKING_DIR }}
